@@ -2,5 +2,5 @@
     <string name="app_name">AudioPlayer</string>
 
     <!--Main-->
-    <string name="main_pickSong">Pick song</string>
+    <string name="main_pickSong">Pick a song</string>
 </resources>
