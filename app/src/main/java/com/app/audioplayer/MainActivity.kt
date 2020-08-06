@@ -8,6 +8,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.observe
+import androidx.transition.TransitionManager
 import com.app.audioplayer.databinding.ActivityMainBinding
 
 
@@ -31,10 +32,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun initViews() {
         viewModel.audioUri.observe(this) {
+            TransitionManager.beginDelayedTransition(binding.root)
             binding.btnMainPickSong.isVisible = false
-            mediaPlayer = MediaPlayer.create(this@MainActivity, it).apply {
-                //start()
-            }
+            binding.grpMainPlayerUi.isVisible = true
+            mediaPlayer = MediaPlayer.create(this@MainActivity, it)
         }
 
         binding.btnMainPickSong.setOnClickListener {
@@ -42,6 +43,13 @@ class MainActivity : AppCompatActivity() {
                 type = "audio/mpeg"
             }
             startActivityForResult(intent, REQ_PICK_AUDIO_FILE)
+        }
+
+        binding.ibMainPlay.setOnClickListener {
+            mediaPlayer?.start()
+        }
+        binding.ibMainPause.setOnClickListener {
+            mediaPlayer?.pause()
         }
     }
 
