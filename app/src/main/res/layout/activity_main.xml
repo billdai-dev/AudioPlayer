@@ -25,6 +25,14 @@
         android:visibility="gone"
         app:constraint_referenced_ids="ib_main_play,ib_main_pause" />
 
+    <com.app.audioplayer.WaveformView
+        android:id="@+id/waveform"
+        android:layout_width="0dp"
+        android:layout_height="200dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <ImageButton
         android:id="@+id/ib_main_play"
         android:layout_width="40dp"

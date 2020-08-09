@@ -4,18 +4,21 @@ import android.app.Activity
 import android.content.Intent
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.observe
 import androidx.transition.TransitionManager
 import com.app.audioplayer.databinding.ActivityMainBinding
+import java.io.ByteArrayOutputStream
 
 
 class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by viewModels()
     private lateinit var binding: ActivityMainBinding
     private var mediaPlayer: MediaPlayer? = null
+    private var mediaDecoder: MediaDecoder? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +39,22 @@ class MainActivity : AppCompatActivity() {
             binding.btnMainPickSong.isVisible = false
             binding.grpMainPlayerUi.isVisible = true
             mediaPlayer = MediaPlayer.create(this@MainActivity, it)
+            mediaDecoder = MediaDecoder(this@MainActivity, it).apply {
+                val outputStream = ByteArrayOutputStream()
+                var data: ByteArray?
+                var size = 0
+                while (readShortData().apply { data = this } != null) {
+                    outputStream.write(data!!)
+                    size += data?.size ?: 0
+                    //Log.d("data", data?.contentToString() ?: "")
+                    // process data here
+                }
+                val result = outputStream.toByteArray()
+                //Log.d("data", result?.contentToString() ?: "")
+                //Log.d("size", "Size:${result?.size ?: 0}")
+                binding.waveform.setSource(result)
+            }
+
         }
 
         binding.btnMainPickSong.setOnClickListener {
