@@ -10,14 +10,12 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.observe
 import androidx.transition.TransitionManager
 import com.app.audioplayer.databinding.ActivityMainBinding
-import java.io.ByteArrayOutputStream
 
 
 class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by viewModels()
     private lateinit var binding: ActivityMainBinding
     private var mediaPlayer: MediaPlayer? = null
-    private var mediaDecoder: MediaDecoder? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,22 +32,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun initViews() {
         viewModel.audioUri.observe(this) {
-            TransitionManager.beginDelayedTransition(binding.root)
-            binding.btnMainPickSong.isVisible = false
-            binding.grpMainPlayerUi.isVisible = true
             mediaPlayer = MediaPlayer.create(this@MainActivity, it)
-            mediaDecoder = MediaDecoder(this@MainActivity, it).apply {
-                val outputStream = ByteArrayOutputStream()
-                var data: ByteArray?
-                var size = 0
-                while (readAudioData().apply { data = this } != null) {
-                    outputStream.write(data!!)
-                    size += data?.size ?: 0
-                }
-                val result = outputStream.toByteArray()
-                binding.waveform.setDataSource(result)
+            viewModel.decodeAudioFile(this@MainActivity, it)
+        }
+        viewModel.decodedAudioData.observe(this) {
+            binding.run {
+                TransitionManager.beginDelayedTransition(root)
+                btnMainPickSong.isVisible = false
+                grpMainPlayerUi.isVisible = true
+                vMainWaveform.setDataSource(it)
             }
-
         }
 
         binding.btnMainPickSong.setOnClickListener {
