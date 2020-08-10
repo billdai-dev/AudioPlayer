@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
                 val outputStream = ByteArrayOutputStream()
                 var data: ByteArray?
                 var size = 0
-                while (readShortData().apply { data = this } != null) {
+                while (readAudioData().apply { data = this } != null) {
                     outputStream.write(data!!)
                     size += data?.size ?: 0
                 }
