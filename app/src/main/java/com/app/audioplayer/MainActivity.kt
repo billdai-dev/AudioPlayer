@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.media.MediaPlayer
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
@@ -46,13 +45,9 @@ class MainActivity : AppCompatActivity() {
                 while (readShortData().apply { data = this } != null) {
                     outputStream.write(data!!)
                     size += data?.size ?: 0
-                    //Log.d("data", data?.contentToString() ?: "")
-                    // process data here
                 }
                 val result = outputStream.toByteArray()
-                //Log.d("data", result?.contentToString() ?: "")
-                //Log.d("size", "Size:${result?.size ?: 0}")
-                binding.waveform.setSource(result)
+                binding.waveform.setDataSource(result)
             }
 
         }

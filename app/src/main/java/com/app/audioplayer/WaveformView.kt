@@ -7,34 +7,17 @@ import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.View
 import androidx.core.content.ContextCompat
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.math.absoluteValue
-import kotlin.math.sqrt
+import kotlin.math.pow
 
 class WaveformView : View {
-    /**
-     * bytes array converted from file.
-     */
-    private var sampledBytes: FloatArray? = null
-
-    //    /**
-//     * Percentage of audio sample scale
-//     * Should updated dynamically while audioPlayer is played
-//     */
-//    private var denseness = 0f
+    private var sampledData: FloatArray? = null
     private var playedPercentage: Float = 0f
-    private var barCount = 0
-
-    /**
-     * Canvas painting for sample scale, filling played part of audio sample
-     */
+    private var barCount = 1
     private val playedPartPaint = Paint()
-
-    /**
-     * Canvas painting for sample scale, filling not played part of audio sample
-     */
     private val notPlayedPartPaint = Paint()
-    //private var width = 0
-    //private var height = 0
 
     constructor(context: Context?) : super(context) {
         init()
@@ -48,47 +31,46 @@ class WaveformView : View {
     }
 
     private fun init() {
-        playedPartPaint.strokeWidth = 1f
-        playedPartPaint.isAntiAlias = true
-        playedPartPaint.color = ContextCompat.getColor(
-            context,
-            R.color.material_on_surface_disabled
-        )
-        notPlayedPartPaint.strokeWidth = 1f
-        notPlayedPartPaint.isAntiAlias = true
-        notPlayedPartPaint.color = ContextCompat.getColor(context, R.color.colorAccent)
+        playedPartPaint.run {
+            strokeWidth = 1f
+            isAntiAlias = true
+            color = ContextCompat.getColor(context, R.color.colorAccent)
+        }
+
+        notPlayedPartPaint.run {
+            strokeWidth = 1f
+            isAntiAlias = true
+            color = ContextCompat.getColor(context, R.color.material_on_surface_disabled)
+        }
     }
 
-    /**
-     * update and redraw Visualizer view
-     */
-    fun setSource(bytes: ByteArray?) {
+    fun setDataSource(bytes: ByteArray?) {
         bytes ?: return
-        val samplesPerBar = (bytes.size / barCount)
-        val sampledBytes = bytes.toList()
+        val shortArr = ShortArray(bytes.size / 2)
+        ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shortArr)
+
+        //Calculate samples for each bar
+        val samplesPerBar = shortArr.size / barCount
+        val sampledChunks = shortArr.toList()
+            //Down sampling raw audio data as chunks
             .chunked(samplesPerBar) { samples ->
+                //Calculate average of the chunk as sampling algorithm
                 var squareSum = 0
                 samples.forEach { squareSum += it * it }
-                sqrt((squareSum / samples.size).toFloat())
-                //samples.maxBy { it } ?: 0
+                (squareSum / samples.size).toFloat()
             }
-        this.sampledBytes = FloatArray(sampledBytes.size) { sampledBytes[it] }
+        //Find the sample chunk with highest value for normalization
+        val multiplier = sampledChunks.max()?.toDouble()?.pow(-1)?.toFloat() ?: 1f
+        this.sampledData = FloatArray(sampledChunks.size) {
+            //Do normalization
+            sampledChunks[it] * multiplier
+        }
+
         invalidate()
     }
 
-    /**
-     * Update player percent. 0 - file not played, 1 - full played
-     *
-     * @param percentage
-     */
-    fun updatePlayerPercent(percentage: Float) {
+    fun updatePlayedPercentage(percentage: Float) {
         playedPercentage = percentage
-//        denseness = Math.ceil(width * percent.toDouble()) as Int.toFloat()
-//        if (denseness < 0) {
-//            denseness = 0f
-//        } else if (denseness > width) {
-//            denseness = width.toFloat()
-//        }
         invalidate()
     }
 
@@ -100,92 +82,24 @@ class WaveformView : View {
         bottom: Int
     ) {
         super.onLayout(changed, left, top, right, bottom)
-        barCount = (measuredWidth / toPx(BAR_WIDTH_DP)).toInt()
+        barCount = (measuredWidth / (toPx(BAR_WIDTH_DP) + toPx(BAR_GAP_DP))).toInt()
     }
 
     override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
         val width = measuredWidth.toFloat()
         val height = measuredHeight.toFloat()
-        if (sampledBytes == null || width == 0f) {
+        if (sampledData == null || width == 0f) {
             return
         }
         var left = 0f
         var right: Float
         for (i in 0 until barCount) {
-            right = left + (i+1) * toPx(BAR_WIDTH_DP)
-            val ratio = (sampledBytes!![i] / 128f).absoluteValue
+            right = left + toPx(BAR_WIDTH_DP)
+            val ratio = (sampledData!![i]).absoluteValue
             val top = height - (ratio * height)
             canvas.drawRect(left, top, right, height, notPlayedPartPaint)
-//            if (x < denseness && x + toPx(2f) < denseness) {
-//                canvas.drawRect(left, top, right, bottom, notPlayedPartPaint)
-//            } else {
-//                canvas.drawRect(left, top, right, bottom, playedPartPaint)
-//                if (x < denseness) {
-//                    canvas.drawRect(left, top, right, bottom, notPlayedPartPaint)
-//                }
-//            }
-            left = right
+            left = right + toPx(BAR_GAP_DP)
         }
-
-        //val totalBarsCount = width / toPx(3f)
-//        if (totalBarsCount <= 0.1f) {
-//            return
-//        }
-        //var value: Byte
-//        val samplesCount = sampledBytes!!.size
-//        var barCounter = 0
-//        var nextBarNum = 0
-//        val y = height / 2
-//        var barNum = 0
-//        var lastBarNum: Int
-//        var drawBarCount: Int
-//        for (a in 0 until samplesCount) {
-//            if (a != nextBarNum) {
-//                continue
-//            }
-//            drawBarCount = 0
-//            lastBarNum = nextBarNum
-//            while (lastBarNum == nextBarNum) {
-//                barCounter += (samplesCount / totalBarsCount)
-//                nextBarNum = barCounter
-//                drawBarCount++
-//            }
-//            val bitPointer = a * 5
-//            val byteNum = bitPointer / java.lang.Byte.SIZE
-//            val byteBitOffset = bitPointer - byteNum * java.lang.Byte.SIZE
-//            val currentByteCount = java.lang.Byte.SIZE - byteBitOffset
-//            val nextByteRest = 5 - currentByteCount
-//            value = (sampledBytes!![byteNum] shr byteBitOffset and (2 shl Math.min(
-//                5,
-//                currentByteCount
-//            ) - 1) - 1)
-//            if (nextByteRest > 0) {
-//                value = value shl nextByteRest
-//                value = value or (sampledBytes!![byteNum + 1] and (2 shl nextByteRest - 1) - 1)
-//            }
-//            for (b in 0 until drawBarCount) {
-//                val x = barNum * toPx(3f)
-//                val left = x.toFloat()
-//                val top = y + toPx(
-//                    VISUALIZER_HEIGHT - Math.max(
-//                        1,
-//                        VISUALIZER_HEIGHT * value / 31.0f
-//                    )
-//                ).toFloat()
-//                val right = x + toPx(2f).toFloat()
-//                val bottom = y + toPx(VISUALIZER_HEIGHT).toFloat()
-//                if (x < denseness && x + toPx(2f) < denseness) {
-//                    canvas.drawRect(left, top, right, bottom, notPlayedPartPaint)
-//                } else {
-//                    canvas.drawRect(left, top, right, bottom, playedPartPaint)
-//                    if (x < denseness) {
-//                        canvas.drawRect(left, top, right, bottom, notPlayedPartPaint)
-//                    }
-//                }
-//                barNum++
-//            }
-//        }
     }
 
     private fun toPx(dp: Float): Float {
@@ -195,6 +109,7 @@ class WaveformView : View {
     }
 
     companion object {
-        private const val BAR_WIDTH_DP = 5f
+        private const val BAR_WIDTH_DP = 3f
+        private const val BAR_GAP_DP = 1f
     }
 }
