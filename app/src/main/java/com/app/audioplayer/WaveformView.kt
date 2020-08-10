@@ -9,11 +9,12 @@ import android.view.View
 import androidx.core.content.ContextCompat
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.pow
 
 class WaveformView : View {
-    private var sampledData: FloatArray? = null
+    private var normalizedSamples: FloatArray? = null
     private var playedPercentage: Float = 0f
     private var barCount = 1
     private val playedPartPaint = Paint()
@@ -51,21 +52,25 @@ class WaveformView : View {
 
         //Calculate samples for each bar
         val samplesPerBar = shortArr.size / barCount
-        val sampledChunks = shortArr.toList()
-            //Down sampling raw audio data as chunks
-            .chunked(samplesPerBar) { samples ->
-                //Calculate average of the chunk as sampling algorithm
-                var squareSum = 0
-                samples.forEach { squareSum += it * it }
-                (squareSum / samples.size).toFloat()
+        val samples = FloatArray(barCount)
+
+        //Down sampling raw audio data as chunks
+        for (i in 0 until barCount) {
+            //Calculate average of the chunk as sampling algorithm
+            val sampleStartIndex = samplesPerBar * i
+            var sum = 0f
+            for (j in 0 until samplesPerBar) {
+                sum += abs(shortArr[sampleStartIndex + j].toFloat())
             }
-        //Find the sample chunk with highest value for normalization
-        val multiplier = sampledChunks.max()?.toDouble()?.pow(-1)?.toFloat() ?: 1f
-        this.sampledData = FloatArray(sampledChunks.size) {
-            //Do normalization
-            sampledChunks[it] * multiplier
+            samples[i] = sum / samplesPerBar
         }
 
+        //Find the sample chunk with highest value for normalization
+        val multiplier = samples.max()?.toDouble()?.pow(-1)?.toFloat() ?: 1f
+        for (i in samples.indices) {
+            samples[i] = samples[i] * multiplier
+        }
+        this.normalizedSamples = samples
         invalidate()
     }
 
@@ -88,14 +93,14 @@ class WaveformView : View {
     override fun onDraw(canvas: Canvas) {
         val width = measuredWidth.toFloat()
         val height = measuredHeight.toFloat()
-        if (sampledData == null || width == 0f) {
+        if (normalizedSamples == null || width == 0f) {
             return
         }
         var left = 0f
         var right: Float
         for (i in 0 until barCount) {
             right = left + toPx(BAR_WIDTH_DP)
-            val ratio = (sampledData!![i]).absoluteValue
+            val ratio = (normalizedSamples!![i]).absoluteValue
             val top = height - (ratio * height)
             canvas.drawRect(left, top, right, height, notPlayedPartPaint)
             left = right + toPx(BAR_GAP_DP)
