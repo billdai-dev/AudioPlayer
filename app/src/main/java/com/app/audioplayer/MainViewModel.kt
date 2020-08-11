@@ -7,6 +7,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.CompositeDisposable
+import io.reactivex.rxjava3.kotlin.addTo
 import io.reactivex.rxjava3.kotlin.subscribeBy
 import io.reactivex.rxjava3.schedulers.Schedulers
 import java.io.ByteArrayOutputStream
@@ -36,13 +37,14 @@ class MainViewModel(private val state: SavedStateHandle) : ViewModel() {
                 viewEvent.postValue(MainViewEvent.Done)
                 decodedAudioData.postValue(bytes)
             }
+            .addTo(compositeDisposable)
     }
 
     override fun onCleared() {
-        mediaDecoder = null
         if (!compositeDisposable.isDisposed) {
             compositeDisposable.dispose()
         }
+        mediaDecoder = null
         super.onCleared()
     }
 
