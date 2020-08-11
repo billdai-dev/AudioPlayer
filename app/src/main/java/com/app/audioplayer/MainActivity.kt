@@ -10,12 +10,18 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.observe
 import androidx.transition.TransitionManager
 import com.app.audioplayer.databinding.ActivityMainBinding
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.disposables.Disposable
+import io.reactivex.rxjava3.kotlin.subscribeBy
+import java.util.concurrent.TimeUnit
 
 
 class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by viewModels()
     private lateinit var binding: ActivityMainBinding
     private var mediaPlayer: MediaPlayer? = null
+    private var trackProgressDisposable: Disposable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,6 +32,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        if (trackProgressDisposable?.isDisposed == false) {
+            trackProgressDisposable?.dispose()
+        }
+        trackProgressDisposable = null
         mediaPlayer?.release()
         super.onDestroy()
     }
@@ -44,7 +54,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
         viewModel.audioUri.observe(this) {
-            mediaPlayer = MediaPlayer.create(this@MainActivity, it)
+            mediaPlayer = MediaPlayer.create(this@MainActivity, it).apply {
+                setOnCompletionListener { mp ->
+                    if (trackProgressDisposable?.isDisposed == false) {
+                        trackProgressDisposable?.dispose()
+                    }
+                    binding.vMainWaveform.updatePlayedPercentage(1f)
+                }
+            }
             viewModel.decodeAudioFile(this@MainActivity, it)
         }
         viewModel.decodedAudioData.observe(this) {
@@ -64,10 +81,22 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.ibMainPlay.setOnClickListener {
-            mediaPlayer?.start()
+            mediaPlayer?.run {
+                if (!isPlaying) {
+                    trackProgressDisposable = createProgressTracker()
+                }
+                start()
+            }
         }
         binding.ibMainPause.setOnClickListener {
-            mediaPlayer?.pause()
+            mediaPlayer?.run {
+                if (isPlaying) {
+                    if (trackProgressDisposable?.isDisposed == false) {
+                        trackProgressDisposable?.dispose()
+                    }
+                }
+                pause()
+            }
         }
     }
 
@@ -80,6 +109,17 @@ class MainActivity : AppCompatActivity() {
             val uri = data?.data ?: return
             viewModel.audioUri.value = uri
         }
+    }
+
+    private fun createProgressTracker(): Disposable {
+        return Observable.interval(500, TimeUnit.MILLISECONDS)
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribeBy {
+                val audioDuration = mediaPlayer?.duration?.toFloat() ?: return@subscribeBy
+                val currentPosition = mediaPlayer?.currentPosition?.toFloat() ?: return@subscribeBy
+                val progressPercent = currentPosition / audioDuration
+                binding.vMainWaveform.updatePlayedPercentage(progressPercent)
+            }
     }
 
     companion object {

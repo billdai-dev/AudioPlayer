@@ -6,6 +6,7 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.View
+import androidx.annotation.MainThread
 import androidx.core.content.ContextCompat
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -74,6 +75,7 @@ class WaveformView : View {
         invalidate()
     }
 
+    @MainThread
     fun updatePlayedPercentage(percentage: Float) {
         playedPercentage = percentage
         invalidate()
