@@ -14,12 +14,18 @@ import java.io.ByteArrayOutputStream
 
 class MainViewModel(private val state: SavedStateHandle) : ViewModel() {
     val audioUri = state.getLiveData<Uri>(STATE_AUDIO_URI)
-    val decodedAudioData = MutableLiveData<ByteArray>()
+
+    //Avoid saving massive data to SavedStateHandle
+    val decodedAudioData = MutableLiveData<Pair<Uri, ByteArray>>()
     val viewEvent = MutableLiveData<MainViewEvent>()
     private var mediaDecoder: MediaDecoder? = null
     private val compositeDisposable = CompositeDisposable()
 
     fun decodeAudioFile(context: Context, uri: Uri) {
+        //Avoid decoding duplicate audio data
+        if (decodedAudioData.value?.first == uri) {
+            return
+        }
         viewEvent.value = MainViewEvent.Loading
         mediaDecoder = MediaDecoder(context, uri)
         Single.fromCallable {
@@ -35,7 +41,7 @@ class MainViewModel(private val state: SavedStateHandle) : ViewModel() {
             .subscribeOn(Schedulers.io())
             .subscribeBy { bytes ->
                 viewEvent.postValue(MainViewEvent.Done)
-                decodedAudioData.postValue(bytes)
+                decodedAudioData.postValue(uri to bytes)
             }
             .addTo(compositeDisposable)
     }

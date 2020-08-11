@@ -16,11 +16,12 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 
 class WaveformView : View {
+    private var rawData: ByteArray? = null
     private var normalizedSamples: FloatArray? = null
     private var playedPercentage: Float = 0f
-    private var barCount = 1
-    private val playedPartPaint = Paint()
-    private val notPlayedPartPaint = Paint()
+
+    private val playedPartPaint: Paint = Paint()
+    private val notPlayedPartPaint: Paint = Paint()
 
     constructor(context: Context?) : super(context) {
         init()
@@ -48,9 +49,51 @@ class WaveformView : View {
     }
 
     fun setDataSource(bytes: ByteArray?) {
-        bytes ?: return
-        val shortArr = ShortArray(bytes.size / 2)
-        ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shortArr)
+        rawData = bytes ?: return
+        invalidate()
+    }
+
+    @MainThread
+    fun updatePlayedPercentage(percentage: Float) {
+        playedPercentage = percentage
+        invalidate()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        val width = measuredWidth.toFloat()
+        val height = measuredHeight.toFloat()
+        val barCount = calculateBarCount(width)
+        if (normalizedSamples == null) {
+            normalizedSamples = calculateSample(barCount, rawData)
+        }
+
+        //Draw bar
+        var left = 0f
+        var right: Float
+        for (i in 0 until barCount) {
+            //Determine the bar color by checking playback progress
+            val isPlayed = i <= (barCount * playedPercentage).roundToInt()
+            val paint = if (isPlayed) playedPartPaint else notPlayedPartPaint
+
+            right = left + toPx(BAR_WIDTH_DP)
+            val ratio = (normalizedSamples!![i]).absoluteValue
+            val top = height - (ratio * height)
+            canvas.drawRect(left, top, right, height, paint)
+
+            left = right + toPx(BAR_GAP_DP)
+        }
+    }
+
+    private fun calculateBarCount(width: Float): Int {
+        return (width / (toPx(BAR_WIDTH_DP) + toPx(BAR_GAP_DP))).toInt()
+    }
+
+    private fun calculateSample(barCount: Int, rawData: ByteArray?): FloatArray? {
+        if (rawData == null) {
+            return null
+        }
+        val shortArr = ShortArray(rawData.size / 2)
+        ByteBuffer.wrap(rawData).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shortArr)
 
         //Calculate samples for each bar
         val samplesPerBar = shortArr.size / barCount
@@ -72,46 +115,7 @@ class WaveformView : View {
         for (i in samples.indices) {
             samples[i] = samples[i] * multiplier
         }
-        this.normalizedSamples = samples
-        invalidate()
-    }
-
-    @MainThread
-    fun updatePlayedPercentage(percentage: Float) {
-        playedPercentage = percentage
-        invalidate()
-    }
-
-    override fun onLayout(
-        changed: Boolean,
-        left: Int,
-        top: Int,
-        right: Int,
-        bottom: Int
-    ) {
-        super.onLayout(changed, left, top, right, bottom)
-        barCount = (measuredWidth / (toPx(BAR_WIDTH_DP) + toPx(BAR_GAP_DP))).toInt()
-    }
-
-    override fun onDraw(canvas: Canvas) {
-        val width = measuredWidth.toFloat()
-        val height = measuredHeight.toFloat()
-        if (normalizedSamples == null || width == 0f) {
-            return
-        }
-        var left = 0f
-        var right: Float
-        for (i in 0 until barCount) {
-            //Determine the bar color by checking playback progress
-            val isPlayed = i <= (barCount * playedPercentage).roundToInt()
-            val paint = if (isPlayed) playedPartPaint else notPlayedPartPaint
-
-            right = left + toPx(BAR_WIDTH_DP)
-            val ratio = (normalizedSamples!![i]).absoluteValue
-            val top = height - (ratio * height)
-            canvas.drawRect(left, top, right, height, paint)
-            left = right + toPx(BAR_GAP_DP)
-        }
+        return samples
     }
 
     private fun toPx(dp: Float): Float {

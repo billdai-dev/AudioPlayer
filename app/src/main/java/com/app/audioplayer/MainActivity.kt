@@ -69,7 +69,7 @@ class MainActivity : AppCompatActivity() {
                 TransitionManager.beginDelayedTransition(root)
                 btnMainPickSong.isVisible = false
                 grpMainPlayerUi.isVisible = true
-                vMainWaveform.setDataSource(it)
+                vMainWaveform.setDataSource(it.second)
             }
         }
 
