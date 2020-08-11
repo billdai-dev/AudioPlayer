@@ -13,6 +13,7 @@ import java.nio.ByteOrder
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.pow
+import kotlin.math.roundToInt
 
 class WaveformView : View {
     private var normalizedSamples: FloatArray? = null
@@ -101,10 +102,14 @@ class WaveformView : View {
         var left = 0f
         var right: Float
         for (i in 0 until barCount) {
+            //Determine the bar color by checking playback progress
+            val isPlayed = i <= (barCount * playedPercentage).roundToInt()
+            val paint = if (isPlayed) playedPartPaint else notPlayedPartPaint
+
             right = left + toPx(BAR_WIDTH_DP)
             val ratio = (normalizedSamples!![i]).absoluteValue
             val top = height - (ratio * height)
-            canvas.drawRect(left, top, right, height, notPlayedPartPaint)
+            canvas.drawRect(left, top, right, height, paint)
             left = right + toPx(BAR_GAP_DP)
         }
     }
