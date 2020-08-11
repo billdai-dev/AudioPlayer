@@ -14,10 +14,12 @@ import java.io.ByteArrayOutputStream
 class MainViewModel(private val state: SavedStateHandle) : ViewModel() {
     val audioUri = state.getLiveData<Uri>(STATE_AUDIO_URI)
     val decodedAudioData = MutableLiveData<ByteArray>()
+    val viewEvent = MutableLiveData<MainViewEvent>()
     private var mediaDecoder: MediaDecoder? = null
     private val compositeDisposable = CompositeDisposable()
 
     fun decodeAudioFile(context: Context, uri: Uri) {
+        viewEvent.value = MainViewEvent.Loading
         mediaDecoder = MediaDecoder(context, uri)
         Single.fromCallable {
             val outputStream = ByteArrayOutputStream()
@@ -30,7 +32,10 @@ class MainViewModel(private val state: SavedStateHandle) : ViewModel() {
             outputStream.toByteArray()
         }
             .subscribeOn(Schedulers.io())
-            .subscribeBy { bytes -> decodedAudioData.postValue(bytes) }
+            .subscribeBy { bytes ->
+                viewEvent.postValue(MainViewEvent.Done)
+                decodedAudioData.postValue(bytes)
+            }
     }
 
     override fun onCleared() {

@@ -31,6 +31,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
+        viewModel.viewEvent.observe(this) { viewEvent ->
+            when (viewEvent) {
+                is MainViewEvent.Loading -> {
+                    TransitionManager.beginDelayedTransition(binding.root)
+                    binding.btnMainPickSong.isVisible = false
+                    binding.piMainLoading.isVisible = true
+                }
+                is MainViewEvent.Done -> {
+                    binding.piMainLoading.isVisible = false
+                }
+            }
+        }
         viewModel.audioUri.observe(this) {
             mediaPlayer = MediaPlayer.create(this@MainActivity, it)
             viewModel.decodeAudioFile(this@MainActivity, it)
