@@ -8,15 +8,16 @@ import android.media.MediaFormat
 import android.net.Uri
 import java.io.IOException
 import java.nio.ByteBuffer
+import javax.inject.Inject
 
-class MediaDecoder(context: Context, uri: Uri) {
+class MediaDecoder @Inject constructor() {
     private val extractor = MediaExtractor()
     private var decoder: MediaCodec? = null
     private var inputFormat: MediaFormat? = null
     private var eof: Boolean = false
     private var outputBufferIndex: Int? = -1
 
-    init {
+    fun init(context: Context, uri: Uri) {
         try {
             extractor.setDataSource(context, uri, null)
             // Select the first audio track we find.
