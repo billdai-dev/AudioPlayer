@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
+apply plugin: 'dagger.hilt.android.plugin'
 
 android {
     compileSdkVersion 29
@@ -47,6 +48,8 @@ ext {
     rxKotlin = '3.0.0'
     rxAndroid = '3.0.0'
     rxPermission = '0.10.2'
+    hilt = '2.28-alpha'
+    hilt_viewModel = '1.0.0-alpha02'
 }
 
 dependencies {
@@ -64,6 +67,10 @@ dependencies {
     implementation "io.reactivex.rxjava3:rxkotlin:$rxKotlin"
     implementation "io.reactivex.rxjava3:rxandroid:$rxAndroid"
     implementation "com.github.tbruyelle:rxpermissions:$rxPermission"
+    implementation "com.google.dagger:hilt-android:$hilt"
+    kapt "com.google.dagger:hilt-android-compiler:$hilt"
+    implementation "androidx.hilt:hilt-lifecycle-viewmodel:$hilt_viewModel"
+    kapt "androidx.hilt:hilt-compiler:$hilt_viewModel"
 
 
     testImplementation 'junit:junit:4.12'
