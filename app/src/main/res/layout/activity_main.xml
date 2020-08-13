@@ -12,7 +12,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/main_pickSong"
-        android:textSize="20dp"
+        android:textSize="@dimen/main_pickSong_fontSize"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -29,7 +29,7 @@
     <com.app.audioplayer.WaveformView
         android:id="@+id/v_main_waveform"
         android:layout_width="0dp"
-        android:layout_height="100dp"
+        android:layout_height="@dimen/main_waveform_height"
         app:layout_constraintBottom_toTopOf="@+id/ib_main_play"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -38,9 +38,9 @@
 
     <ImageButton
         android:id="@+id/ib_main_play"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginTop="80dp"
+        android:layout_width="@dimen/main_btn_play_size"
+        android:layout_height="@dimen/main_btn_play_size"
+        android:layout_marginTop="@dimen/main_btn_play_topMargin"
         android:background="@color/white"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_baseline_play_circle_outline_24"
@@ -51,8 +51,8 @@
 
     <ImageButton
         android:id="@+id/ib_main_pause"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="@dimen/main_btn_pause_size"
+        android:layout_height="@dimen/main_btn_pause_size"
         android:background="@color/white"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_baseline_pause_circle_outline_24"
